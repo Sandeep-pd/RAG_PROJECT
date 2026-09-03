@@ -2,3 +2,4 @@ faiss
 pandas
 numpy
 transformers
+google-generativeai

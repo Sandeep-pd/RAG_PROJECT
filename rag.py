@@ -2,7 +2,10 @@ import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from transformers import pipeline,AutoTokenizer,AutoModelForCausalLM
-
+import google.generativeai as genai
+import os
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+gemini_model = genai.GenerativeModel('gemini-2.5-flash')
 knowledge_base =[
     "High-Level and Readable: Python is designed to be highly readable and has a clean, straightforward syntax that closely resembles plain English, making it exceptionally beginner-friendly.",
     "Interpreted Language: Python code is executed line by line by an interpreter rather than being compiled into machine code beforehand, which simplifies debugging and rapid prototyping.",
@@ -28,16 +31,33 @@ model = AutoModelForCausalLM.from_pretrained("distilgpt2")
 generator = pipeline(task="text-generation",model=model,tokenizer=tokenizer)
 
 
-def rag_query_v2(query,k=2):
-  # We need to convert user's query in embedding
+def rag_query_gemini(query,k=2):
   query_embedding =  embedding_model.encode([query])
   distances , indices = index.search(query_embedding,k)
   retrived_docs = [knowledge_base[i] for i in indices[0]]
   context = "\n".join(retrived_docs)
-  augmented_prompt = f"Based on the following information, answer the questions : \n content:\n {context} \n and question is {query}"
-  print("-"*50)
-  llm_response = generator(augmented_prompt,max_new_tokens=100,temperature=0.7,do_sample=True)
-  print(llm_response)    
 
+  # Constract an augumented prompt for Gemini model
+  # Note - FYI , A good prompt is crucial for efficient RAG with any advanced LLM
+  augumented_prompt = (
+      f"Based on the following information , please answer the question thoroughly and concisely. also if question is not related to Content then please search in Gemini knowledge base,
+      so give priority to below mentioned content but do not limit your search if question has different context than my knowledge base\n"
+      f"Content:\n{context}\n"
+      f"Question:{query}\n"
+      f"Answer:
+  ")
+
+
+  print("\n Augumented prompt ",augumented_prompt)
+  print("*"*50)
+
+
+  response = gemini_model.generate_content(augumented_prompt,
+                                           generation_config=genai.GenerationConfig(
+                                               temperature=0.2,
+                                               max_output_tokens=700
+                                           ) )
+  print(response)
+  return response
 
 
