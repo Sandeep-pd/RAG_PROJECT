@@ -8,18 +8,7 @@ import sqlite3
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 gemini_model = genai.GenerativeModel('gemini-2.5-flash')
 
-conn = sqlite3.connect("knowledge_base.db")
 
-cursor = conn.cursor()
-
-
-# Create table
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS knowledge_base (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    content TEXT NOT NULL
-)
-""")
 
 
 knowledge_base =[
