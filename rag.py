@@ -4,8 +4,24 @@ from sentence_transformers import SentenceTransformer
 from transformers import pipeline,AutoTokenizer,AutoModelForCausalLM
 import google.generativeai as genai
 import os
+import sqlite3
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 gemini_model = genai.GenerativeModel('gemini-2.5-flash')
+
+conn = sqlite3.connect("knowledge_base.db")
+
+cursor = conn.cursor()
+
+
+# Create table
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS knowledge_base (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    content TEXT NOT NULL
+)
+""")
+
+
 knowledge_base =[
     "High-Level and Readable: Python is designed to be highly readable and has a clean, straightforward syntax that closely resembles plain English, making it exceptionally beginner-friendly.",
     "Interpreted Language: Python code is executed line by line by an interpreter rather than being compiled into machine code beforehand, which simplifies debugging and rapid prototyping.",
