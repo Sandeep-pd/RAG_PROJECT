@@ -1,6 +1,7 @@
 import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
+from transformers import pipeline,AutoTokenizer,AutoModelForCausalLM
 
 knowledge_base =[
     "High-Level and Readable: Python is designed to be highly readable and has a clean, straightforward syntax that closely resembles plain English, making it exceptionally beginner-friendly.",
@@ -21,14 +22,22 @@ embeddings_dimension = embeddings.shape[1]
 embeddings_dimension
 index = faiss.IndexFlatL2(embeddings_dimension)
 index.add(embeddings)
-def rag_query(query,k=2):
+
+tokenizer = AutoTokenizer.from_pretrained("distilgpt2")
+model = AutoModelForCausalLM.from_pretrained("distilgpt2")
+generator = pipeline(task="text-generation",model=model,tokenizer=tokenizer)
+
+
+def rag_query_v2(query,k=2):
   # We need to convert user's query in embedding
   query_embedding =  embedding_model.encode([query])
   distances , indices = index.search(query_embedding,k)
   retrived_docs = [knowledge_base[i] for i in indices[0]]
-  print(f"Retrived documents (top {k}) : ")
-  for i,doc in enumerate(retrived_docs):
-    print(f"{i+1}. {doc}")
+  context = "\n".join(retrived_docs)
+  augmented_prompt = f"Based on the following information, answer the questions : \n content:\n {context} \n and question is {query}"
+  print("-"*50)
+  llm_response = generator(augmented_prompt,max_new_tokens=100,temperature=0.7,do_sample=True)
+  print(llm_response)    
 
 
 
